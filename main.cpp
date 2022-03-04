@@ -31,7 +31,7 @@ int main(int argc, char **argv)
 {
     Diagnose::GetInstance()->initialize();
     int i = 0;
-    float j = 7 / i;
+    //float j = 7 / i;
     fun1();
 }
 /*
