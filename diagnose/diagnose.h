@@ -20,6 +20,7 @@ private:
     static void handler(int sig);
     void printfSignal(int sig);
     void log(string str);
+    string getProgramName();
     class Garbo 
     {
     public:
@@ -29,6 +30,7 @@ private:
     static Diagnose * Instance;
     static Garbo garbo;
     static mutex s_Mutex;
+    string m_exeName;
 
 };
 

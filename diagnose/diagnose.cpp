@@ -7,9 +7,10 @@
 #include <fstream>
 #include <string>
 #include <time.h>
+#include <cstdlib>
 
 #define MAXFILESIZE 10*1024*1024   
-
+#define COREFILENAME "corefile.txt"
 Diagnose * Diagnose::Instance = NULL;
 Diagnose::Garbo Diagnose::garbo;
 mutex Diagnose::s_Mutex;
@@ -44,7 +45,7 @@ void Diagnose::UnInitialize()
     signal(SIGSTKFLT, SIG_DFL);   /* Stack fault.  */
 }
 
-Diagnose::Diagnose(){
+Diagnose::Diagnose():m_exeName(""){
     log("SYSTEM START..."); 
 }
 
@@ -67,8 +68,13 @@ void Diagnose::handler(int sig)
 
     for (size_t i = 0; i < size; i++)
     {
-        cout << func_name_cache[i] << endl;
-        GetInstance()->log(func_name_cache[i]);
+        string tmpStr = func_name_cache[i];
+        string diamandStr = "";
+        int pos = tmpStr.find("[0x");
+        diamandStr = "addr2line -a -C -p -f " + tmpStr.substr(pos+1, 8) + " -e " + GetInstance()->getProgramName() + " | tee -a " + COREFILENAME;
+        cout << tmpStr << endl;
+        GetInstance()->log(tmpStr);
+        system(diamandStr.c_str());
     }
 
     free (func_name_cache);
@@ -105,14 +111,14 @@ void Diagnose::printfSignal(int sig)
 
 void Diagnose::log(string str)
 {
-    ofstream out("corefile.txt", ios::app);
+    ofstream out(COREFILENAME, ios::app);
     if (out.is_open()) 
     {
         size_t dstFileSize = out.tellp();
         if(dstFileSize > MAXFILESIZE)
         {
             out.close();
-            out.open("corefile.txt");
+            out.open(COREFILENAME);
             if(!out.is_open())
             {
                 cout<< "open corefile.txt failed" << endl;
@@ -132,6 +138,27 @@ void Diagnose::log(string str)
         cout<< "open corefile.txt failed" << endl;
     }
 }
+
+string Diagnose::getProgramName()
+{
+    if(m_exeName != "")
+    {
+        return m_exeName;
+    }
+
+    std::string _exeName = "/proc/self/exe";
+
+    size_t linksize = 256;
+
+    char   exeName[256] = {0};
+
+    if(readlink(_exeName.c_str() , exeName, linksize) !=-1 )
+    {
+        m_exeName = exeName;
+    }
+    return m_exeName;
+}
+
 
 Diagnose::Garbo::~Garbo()
 {
