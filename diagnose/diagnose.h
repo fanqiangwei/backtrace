@@ -9,7 +9,8 @@ class Diagnose
 
 public:
     static Diagnose * GetInstance();
-    void initialize();
+    void Initialize();
+    void UnInitialize();
 private:
     Diagnose();
     ~Diagnose();
@@ -21,22 +22,13 @@ private:
     void log(string str);
     class Garbo 
     {
-        public:
-            ~Garbo()
-            {
-                if(Diagnose::Instance != NULL)
-                {
-                    Diagnose::Instance->log("SYSTEM END...\n"); 
-                    delete Diagnose::Instance;
-                    Diagnose::Instance = NULL;
-                }
-            }
+    public:
+        ~Garbo();
     };
 private:
     static Diagnose * Instance;
     static Garbo garbo;
     static mutex s_Mutex;
-
 
 };
 

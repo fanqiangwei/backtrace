@@ -8,6 +8,8 @@
 #include <string>
 #include <time.h>
 
+#define MAXFILESIZE 10*1024*1024   
+
 Diagnose * Diagnose::Instance = NULL;
 Diagnose::Garbo Diagnose::garbo;
 mutex Diagnose::s_Mutex;
@@ -24,13 +26,22 @@ Diagnose* Diagnose::GetInstance()
     return Instance;
 }
 
-void Diagnose::initialize()
+void Diagnose::Initialize()
 {
     signal(SIGSEGV, handler); 	   /* Segmentation violation (ANSI).  */
     signal(SIGBUS, handler);      /* BUS error (4.2 BSD).  */
     signal(SIGFPE, handler);      /* Floating-point exception (ANSI).  */
     signal(SIGPIPE, handler);     /* Broken pipe (POSIX).  */
     signal(SIGSTKFLT, handler);   /* Stack fault.  */
+}
+
+void Diagnose::UnInitialize()
+{
+    signal(SIGSEGV, SIG_DFL); 	   /* Segmentation violation (ANSI).  */
+    signal(SIGBUS, SIG_DFL);      /* BUS error (4.2 BSD).  */
+    signal(SIGFPE, SIG_DFL);      /* Floating-point exception (ANSI).  */
+    signal(SIGPIPE, SIG_DFL);     /* Broken pipe (POSIX).  */
+    signal(SIGSTKFLT, SIG_DFL);   /* Stack fault.  */
 }
 
 Diagnose::Diagnose(){
@@ -61,6 +72,7 @@ void Diagnose::handler(int sig)
     }
 
     free (func_name_cache);
+    //GetInstance()->UnInitialize();
     exit(1);
 }
 
@@ -96,14 +108,37 @@ void Diagnose::log(string str)
     ofstream out("corefile.txt", ios::app);
     if (out.is_open()) 
     {
+        size_t dstFileSize = out.tellp();
+        if(dstFileSize > MAXFILESIZE)
+        {
+            out.close();
+            out.open("corefile.txt");
+            if(!out.is_open())
+            {
+                cout<< "open corefile.txt failed" << endl;
+                return;
+            }
+        }
+
         time_t tmp;   
         struct tm *timp; 
-    
         time(&tmp);   
         timp = localtime(&tmp);
         str = "{" +to_string(1900 + timp->tm_year) + "-" + to_string(1 + timp->tm_mon)+ "-" + to_string(timp->tm_mday) 
                         + " " + to_string(timp->tm_hour) + ":" + to_string(timp->tm_min) + ":" + to_string(timp->tm_sec) + "} " + str;
         out << str << "\n";
         out.close();
+    }else{
+        cout<< "open corefile.txt failed" << endl;
+    }
+}
+
+Diagnose::Garbo::~Garbo()
+{
+    if(Diagnose::Instance != NULL)
+    {
+        Diagnose::Instance->log("SYSTEM END...\n"); 
+        delete Diagnose::Instance;
+        Diagnose::Instance = NULL;
     }
 }

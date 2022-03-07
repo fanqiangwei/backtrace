@@ -29,7 +29,7 @@ void fun1()
 
 int main(int argc, char **argv)
 {
-    Diagnose::GetInstance()->initialize();
+    Diagnose::GetInstance()->Initialize();
     int i = 0;
     //float j = 7 / i;
     fun1();
